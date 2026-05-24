@@ -495,7 +495,8 @@ function EnquiryModal({
       onClick={onClose}
     >
       <div
-        className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl sm:rounded-3xl"
+        className="w-full max-w-md rounded-t-3xl bg-white p-5 shadow-2xl sm:rounded-3xl"
+        style={{ touchAction: "manipulation", WebkitOverflowScrolling: "touch" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -530,6 +531,9 @@ function EnquiryModal({
                   setForm((f) => ({ ...f, [key]: e.target.value }))
                 }
                 placeholder={ph}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
               />
             </div>
@@ -546,6 +550,9 @@ function EnquiryModal({
               }
               placeholder="Describe the work (e.g. 20x15 Shed work)"
               rows={3}
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
               className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
             />
           </div>
