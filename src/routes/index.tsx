@@ -134,7 +134,7 @@ function EnquiriesPage() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "enquiries" },
-        (payload) => {
+        (payload: { eventType: string; new: unknown; old: unknown }) => {
           setEnquiries((prev) => {
             if (payload.eventType === "INSERT") {
               const row = payload.new as Enquiry;
