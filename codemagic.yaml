@@ -20,9 +20,9 @@ workflows:
       - name: Build web app
         script: |
           if command -v bun >/dev/null 2>&1; then
-            bun run build
+            bun run build:mobile
           else
-            npm run build
+            npm run build:mobile
           fi
       - name: Sync Capacitor Android
         script: |
