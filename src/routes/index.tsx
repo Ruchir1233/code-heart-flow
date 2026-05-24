@@ -491,7 +491,7 @@ function EnquiryModal({
 
   return (
     <div
-      className="fixed inset-0 z-30 flex items-end justify-center bg-slate-900/50 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-30 flex items-end justify-center bg-slate-900/60 sm:items-center"
       onClick={onClose}
     >
       <div
@@ -599,7 +599,7 @@ function ConfirmDeleteDialog({
 }) {
   return (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/60 p-4"
       onClick={onCancel}
     >
       <div
