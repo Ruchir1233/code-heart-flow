@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Pankti Engineering</string>
+    <string name="title_activity_main">Pankti Engineering</string>
+    <string name="package_name">com.panktiengineering.crm</string>
+    <string name="custom_url_scheme">com.panktiengineering.crm</string>
+</resources>
