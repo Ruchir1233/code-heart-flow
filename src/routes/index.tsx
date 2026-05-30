@@ -16,6 +16,10 @@ import {
   PhoneCall,
   Pencil,
   Trash2,
+  Paperclip,
+  CalendarDays,
+  BellRing,
+  Upload,
 } from "lucide-react";
 import { supabase, STAGES, type Enquiry, type Stage } from "@/lib/supabase";
 
@@ -106,6 +110,23 @@ function formatDate(iso: string) {
   return `${date}, ${time}`;
 }
 
+function todayLocal(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function formatVisitDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 type EditTarget = Enquiry | "new" | null;
 
 function EnquiriesPage() {
@@ -115,6 +136,7 @@ function EnquiriesPage() {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<EditTarget>(null);
   const [confirmDelete, setConfirmDelete] = useState<Enquiry | null>(null);
+  const [reminderOpen, setReminderOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -175,6 +197,27 @@ function EnquiriesPage() {
     return c;
   }, [enquiries]);
 
+  const today = todayLocal();
+  const visitsToday = useMemo(
+    () => enquiries.filter((e) => e.site_visit_date === today),
+    [enquiries, today],
+  );
+  const estimatesCount = useMemo(
+    () => enquiries.filter((e) => !!e.estimate_file_url).length,
+    [enquiries],
+  );
+
+  // Show today's site-visit reminder once per day
+  useEffect(() => {
+    if (loading) return;
+    if (visitsToday.length === 0) return;
+    const key = `pankti_visit_reminder_${today}`;
+    if (typeof window === "undefined") return;
+    if (window.localStorage.getItem(key) === "shown") return;
+    setReminderOpen(true);
+    window.localStorage.setItem(key, "shown");
+  }, [loading, visitsToday.length, today]);
+
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
     return enquiries.filter((e) => {
@@ -231,6 +274,21 @@ function EnquiriesPage() {
         {/* Stage cards */}
         <div className="-mx-1 overflow-x-auto px-3 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex gap-2.5">
+            <SummaryCard
+              icon={CalendarDays}
+              label="Visits Today"
+              value={visitsToday.length}
+              tint="text-rose-600"
+              onClick={() =>
+                visitsToday.length > 0 && setReminderOpen(true)
+              }
+            />
+            <SummaryCard
+              icon={Paperclip}
+              label="Estimates"
+              value={estimatesCount}
+              tint="text-emerald-600"
+            />
             {STAGES.map((stage) => {
               const meta = STAGE_META[stage];
               const Icon = meta.icon;
@@ -318,6 +376,110 @@ function EnquiriesPage() {
           onConfirm={() => deleteEnquiry(confirmDelete.id)}
         />
       )}
+
+      {reminderOpen && visitsToday.length > 0 && (
+        <TodayVisitsReminder
+          visits={visitsToday}
+          onClose={() => setReminderOpen(false)}
+          onOpenEnquiry={(e) => {
+            setReminderOpen(false);
+            setEditing(e);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function SummaryCard({
+  icon: Icon,
+  label,
+  value,
+  tint,
+  onClick,
+}: {
+  icon: typeof Users;
+  label: string;
+  value: number;
+  tint: string;
+  onClick?: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-[7.75rem] shrink-0 flex-col items-start gap-1.5 rounded-2xl border-2 border-slate-200/80 bg-white p-3 text-left shadow-sm transition active:scale-[0.97]"
+    >
+      <div className="flex items-center gap-1.5">
+        <Icon className={`h-4 w-4 ${tint}`} />
+        <span className={`text-[11px] font-semibold ${tint}`}>{label}</span>
+      </div>
+      <span className="text-2xl font-bold text-slate-900">{value}</span>
+    </button>
+  );
+}
+
+function TodayVisitsReminder({
+  visits,
+  onClose,
+  onOpenEnquiry,
+}: {
+  visits: Enquiry[];
+  onClose: () => void;
+  onOpenEnquiry: (e: Enquiry) => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 p-4 sm:items-center"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-3 flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-rose-100">
+            <BellRing className="h-5 w-5 text-rose-600" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-slate-900">
+              Today's Site Visits
+            </h3>
+            <p className="text-xs text-slate-500">
+              {visits.length} scheduled for today
+            </p>
+          </div>
+        </div>
+
+        <ul className="mt-2 max-h-72 space-y-2 overflow-y-auto">
+          {visits.map((v) => (
+            <li
+              key={v.id}
+              className="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-slate-900">
+                  {v.customer_name}
+                </p>
+                <p className="truncate text-xs text-slate-500">{v.location}</p>
+              </div>
+              <button
+                onClick={() => onOpenEnquiry(v)}
+                className="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+              >
+                Open
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        <button
+          onClick={onClose}
+          className="mt-4 w-full rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+        >
+          Dismiss
+        </button>
+      </div>
     </div>
   );
 }
@@ -387,6 +549,32 @@ function EnquiryCard({
             <p className="text-sm font-medium text-slate-800">
               {enquiry.requirement}
             </p>
+            {(enquiry.estimate_file_url || enquiry.site_visit_date) && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {enquiry.estimate_file_url && (
+                  <a
+                    href={enquiry.estimate_file_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-100"
+                  >
+                    <Paperclip className="h-3 w-3" />
+                    Estimate
+                    {enquiry.estimate_uploaded_at && (
+                      <span className="font-normal text-emerald-600/80">
+                        · {new Date(enquiry.estimate_uploaded_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
+                      </span>
+                    )}
+                  </a>
+                )}
+                {enquiry.site_visit_date && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-semibold text-orange-700">
+                    <CalendarDays className="h-3 w-3" />
+                    Visit · {formatVisitDate(enquiry.site_visit_date)}
+                  </span>
+                )}
+              </div>
+            )}
             <p className="mt-1 text-xs text-slate-400">
               Added on {formatDate(enquiry.created_at)}
             </p>
@@ -445,18 +633,63 @@ function EnquiryModal({
 }) {
   const isNew = target === "new";
   const initial = isNew
-    ? { customer_name: "", phone: "", location: "", requirement: "", stage: "New Enquiry" as Stage }
+    ? {
+        customer_name: "",
+        phone: "",
+        location: "",
+        requirement: "",
+        stage: "New Enquiry" as Stage,
+        site_visit_date: "",
+        site_visit_notes: "",
+        estimate_file_url: "" as string | null | "",
+        estimate_uploaded_at: "" as string | null | "",
+      }
     : {
         customer_name: target.customer_name,
         phone: target.phone,
         location: target.location,
         requirement: target.requirement,
         stage: target.stage,
+        site_visit_date: target.site_visit_date ?? "",
+        site_visit_notes: target.site_visit_notes ?? "",
+        estimate_file_url: target.estimate_file_url ?? "",
+        estimate_uploaded_at: target.estimate_uploaded_at ?? "",
       };
 
   const [form, setForm] = useState(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function handleFileUpload(file: File) {
+    setError(null);
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "bin";
+      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const path = `enquiries/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}`;
+      const { error: upErr } = await supabase.storage
+        .from("enquiry-attachments")
+        .upload(path, file, {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: file.type || `application/${ext}`,
+        });
+      if (upErr) throw upErr;
+      const { data } = supabase.storage
+        .from("enquiry-attachments")
+        .getPublicUrl(path);
+      setForm((f) => ({
+        ...f,
+        estimate_file_url: data.publicUrl,
+        estimate_uploaded_at: new Date().toISOString(),
+      }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -471,12 +704,18 @@ function EnquiryModal({
       return;
     }
     setSaving(true);
-    const payload = {
+    const payload: Record<string, unknown> = {
       customer_name: form.customer_name.trim().slice(0, 120),
       phone: form.phone.trim().slice(0, 20),
       location: form.location.trim().slice(0, 120),
       requirement: form.requirement.trim().slice(0, 500),
       stage: form.stage,
+      site_visit_date: form.site_visit_date ? form.site_visit_date : null,
+      site_visit_notes: form.site_visit_notes?.trim()
+        ? form.site_visit_notes.trim().slice(0, 500)
+        : null,
+      estimate_file_url: form.estimate_file_url || null,
+      estimate_uploaded_at: form.estimate_uploaded_at || null,
     };
     const { error } = isNew
       ? await supabase.from("enquiries").insert(payload)
@@ -574,6 +813,87 @@ function EnquiryModal({
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-slate-600">
+              Site Visit Date
+            </label>
+            <input
+              type="date"
+              value={form.site_visit_date || ""}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, site_visit_date: e.target.value }))
+              }
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-slate-600">
+              Site Visit Notes
+            </label>
+            <textarea
+              value={form.site_visit_notes || ""}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, site_visit_notes: e.target.value }))
+              }
+              placeholder="Optional notes for the visit"
+              rows={2}
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-slate-600">
+              Estimate / Attachment
+            </label>
+            {form.estimate_file_url ? (
+              <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5">
+                <Paperclip className="h-4 w-4 text-emerald-600" />
+                <a
+                  href={form.estimate_file_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 truncate text-xs font-semibold text-emerald-700 underline"
+                >
+                  View attachment
+                </a>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setForm((f) => ({
+                      ...f,
+                      estimate_file_url: "",
+                      estimate_uploaded_at: "",
+                    }))
+                  }
+                  className="rounded-md p-1 text-emerald-700 hover:bg-emerald-100"
+                  aria-label="Remove attachment"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-xs font-semibold text-slate-600 hover:border-blue-400 hover:text-blue-600">
+                <Upload className="h-4 w-4" />
+                {uploading ? "Uploading…" : "Upload Estimate (Image / PDF)"}
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileUpload(file);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            )}
           </div>
 
           {error && (

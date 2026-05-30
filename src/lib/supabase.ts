@@ -21,6 +21,10 @@ export interface Enquiry {
   requirement: string;
   stage: Stage;
   created_at: string;
+  estimate_file_url?: string | null;
+  estimate_uploaded_at?: string | null;
+  site_visit_date?: string | null; // YYYY-MM-DD
+  site_visit_notes?: string | null;
 }
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
