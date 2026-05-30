@@ -376,6 +376,110 @@ function EnquiriesPage() {
           onConfirm={() => deleteEnquiry(confirmDelete.id)}
         />
       )}
+
+      {reminderOpen && visitsToday.length > 0 && (
+        <TodayVisitsReminder
+          visits={visitsToday}
+          onClose={() => setReminderOpen(false)}
+          onOpenEnquiry={(e) => {
+            setReminderOpen(false);
+            setEditing(e);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function SummaryCard({
+  icon: Icon,
+  label,
+  value,
+  tint,
+  onClick,
+}: {
+  icon: typeof Users;
+  label: string;
+  value: number;
+  tint: string;
+  onClick?: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-[7.75rem] shrink-0 flex-col items-start gap-1.5 rounded-2xl border-2 border-slate-200/80 bg-white p-3 text-left shadow-sm transition active:scale-[0.97]"
+    >
+      <div className="flex items-center gap-1.5">
+        <Icon className={`h-4 w-4 ${tint}`} />
+        <span className={`text-[11px] font-semibold ${tint}`}>{label}</span>
+      </div>
+      <span className="text-2xl font-bold text-slate-900">{value}</span>
+    </button>
+  );
+}
+
+function TodayVisitsReminder({
+  visits,
+  onClose,
+  onOpenEnquiry,
+}: {
+  visits: Enquiry[];
+  onClose: () => void;
+  onOpenEnquiry: (e: Enquiry) => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 p-4 sm:items-center"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-3 flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-rose-100">
+            <BellRing className="h-5 w-5 text-rose-600" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-slate-900">
+              Today's Site Visits
+            </h3>
+            <p className="text-xs text-slate-500">
+              {visits.length} scheduled for today
+            </p>
+          </div>
+        </div>
+
+        <ul className="mt-2 max-h-72 space-y-2 overflow-y-auto">
+          {visits.map((v) => (
+            <li
+              key={v.id}
+              className="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-slate-900">
+                  {v.customer_name}
+                </p>
+                <p className="truncate text-xs text-slate-500">{v.location}</p>
+              </div>
+              <button
+                onClick={() => onOpenEnquiry(v)}
+                className="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+              >
+                Open
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        <button
+          onClick={onClose}
+          className="mt-4 w-full rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+        >
+          Dismiss
+        </button>
+      </div>
     </div>
   );
 }
