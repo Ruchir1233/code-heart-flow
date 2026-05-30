@@ -274,6 +274,21 @@ function EnquiriesPage() {
         {/* Stage cards */}
         <div className="-mx-1 overflow-x-auto px-3 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex gap-2.5">
+            <SummaryCard
+              icon={CalendarDays}
+              label="Visits Today"
+              value={visitsToday.length}
+              tint="text-rose-600"
+              onClick={() =>
+                visitsToday.length > 0 && setReminderOpen(true)
+              }
+            />
+            <SummaryCard
+              icon={Paperclip}
+              label="Estimates"
+              value={estimatesCount}
+              tint="text-emerald-600"
+            />
             {STAGES.map((stage) => {
               const meta = STAGE_META[stage];
               const Icon = meta.icon;
