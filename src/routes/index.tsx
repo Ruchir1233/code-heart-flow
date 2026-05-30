@@ -409,6 +409,114 @@ function EnquiriesPage() {
   );
 }
 
+function SideMenu({
+  open,
+  onClose,
+  activeFilter,
+  onSelect,
+  onOpenVisits,
+}: {
+  open: boolean;
+  onClose: () => void;
+  activeFilter: Stage | null;
+  onSelect: (filter: Stage | null) => void;
+  onOpenVisits: () => void;
+}) {
+  if (!open) return null;
+  const items: Array<{
+    label: string;
+    icon: typeof Users;
+    onClick: () => void;
+    isActive: boolean;
+    external?: boolean;
+  }> = [
+    {
+      label: "Dashboard",
+      icon: LayoutDashboard,
+      onClick: () => onSelect(null),
+      isActive: activeFilter === null,
+    },
+    {
+      label: "Enquiries",
+      icon: Users,
+      onClick: () => onSelect("New Enquiry"),
+      isActive: activeFilter === "New Enquiry",
+    },
+    {
+      label: "Site Visits",
+      icon: CalendarDays,
+      onClick: onOpenVisits,
+      isActive: activeFilter === "Site Visit Done",
+    },
+    {
+      label: "Estimates",
+      icon: FileText,
+      onClick: () => onSelect("Estimate Sent"),
+      isActive: activeFilter === "Estimate Sent",
+    },
+    {
+      label: "Payments & Operations",
+      icon: Wallet,
+      onClick: () => {
+        window.location.href = "https://manage.panktiengineering.com";
+      },
+      isActive: false,
+      external: true,
+    },
+  ];
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      <div
+        className="absolute inset-0 bg-slate-900/60"
+        onClick={onClose}
+        aria-hidden
+      />
+      <aside className="relative z-10 flex h-full w-72 max-w-[82vw] flex-col bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-4">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-blue-600">
+              Pankti Engineering
+            </p>
+            <p className="text-sm font-semibold text-slate-900">CRM</p>
+          </div>
+          <button
+            aria-label="Close menu"
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-slate-600 hover:bg-slate-100"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <nav className="flex-1 overflow-y-auto p-3">
+          {items.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.label}
+                onClick={item.onClick}
+                className={`mb-1 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium transition active:scale-[0.98] ${
+                  item.isActive
+                    ? "bg-blue-50 text-blue-700"
+                    : "text-slate-700 hover:bg-slate-100"
+                }`}
+              >
+                <Icon className="h-5 w-5 shrink-0" />
+                <span className="flex-1">{item.label}</span>
+                {item.external && (
+                  <ExternalLink className="h-4 w-4 text-slate-400" />
+                )}
+              </button>
+            );
+          })}
+        </nav>
+        <div className="border-t border-slate-200 px-4 py-3 text-[11px] text-slate-500">
+          v1.0 · Pankti Engineering
+        </div>
+      </aside>
+    </div>
+  );
+}
+
 function SummaryCard({
   icon: Icon,
   label,
