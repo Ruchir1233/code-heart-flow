@@ -815,6 +815,87 @@ function EnquiryModal({
             </select>
           </div>
 
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-slate-600">
+              Site Visit Date
+            </label>
+            <input
+              type="date"
+              value={form.site_visit_date || ""}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, site_visit_date: e.target.value }))
+              }
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-slate-600">
+              Site Visit Notes
+            </label>
+            <textarea
+              value={form.site_visit_notes || ""}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, site_visit_notes: e.target.value }))
+              }
+              placeholder="Optional notes for the visit"
+              rows={2}
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-slate-600">
+              Estimate / Attachment
+            </label>
+            {form.estimate_file_url ? (
+              <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5">
+                <Paperclip className="h-4 w-4 text-emerald-600" />
+                <a
+                  href={form.estimate_file_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 truncate text-xs font-semibold text-emerald-700 underline"
+                >
+                  View attachment
+                </a>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setForm((f) => ({
+                      ...f,
+                      estimate_file_url: "",
+                      estimate_uploaded_at: "",
+                    }))
+                  }
+                  className="rounded-md p-1 text-emerald-700 hover:bg-emerald-100"
+                  aria-label="Remove attachment"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-xs font-semibold text-slate-600 hover:border-blue-400 hover:text-blue-600">
+                <Upload className="h-4 w-4" />
+                {uploading ? "Uploading…" : "Upload Estimate (Image / PDF)"}
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileUpload(file);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            )}
+          </div>
+
           {error && (
             <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">
               {error}
