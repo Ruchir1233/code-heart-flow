@@ -110,6 +110,23 @@ function formatDate(iso: string) {
   return `${date}, ${time}`;
 }
 
+function todayLocal(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function formatVisitDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 type EditTarget = Enquiry | "new" | null;
 
 function EnquiriesPage() {
@@ -119,6 +136,7 @@ function EnquiriesPage() {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<EditTarget>(null);
   const [confirmDelete, setConfirmDelete] = useState<Enquiry | null>(null);
+  const [reminderOpen, setReminderOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -178,6 +196,27 @@ function EnquiriesPage() {
     }
     return c;
   }, [enquiries]);
+
+  const today = todayLocal();
+  const visitsToday = useMemo(
+    () => enquiries.filter((e) => e.site_visit_date === today),
+    [enquiries, today],
+  );
+  const estimatesCount = useMemo(
+    () => enquiries.filter((e) => !!e.estimate_file_url).length,
+    [enquiries],
+  );
+
+  // Show today's site-visit reminder once per day
+  useEffect(() => {
+    if (loading) return;
+    if (visitsToday.length === 0) return;
+    const key = `pankti_visit_reminder_${today}`;
+    if (typeof window === "undefined") return;
+    if (window.localStorage.getItem(key) === "shown") return;
+    setReminderOpen(true);
+    window.localStorage.setItem(key, "shown");
+  }, [loading, visitsToday.length, today]);
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
