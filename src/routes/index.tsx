@@ -16,6 +16,10 @@ import {
   PhoneCall,
   Pencil,
   Trash2,
+  Paperclip,
+  CalendarDays,
+  BellRing,
+  Upload,
 } from "lucide-react";
 import { supabase, STAGES, type Enquiry, type Stage } from "@/lib/supabase";
 
