@@ -549,6 +549,32 @@ function EnquiryCard({
             <p className="text-sm font-medium text-slate-800">
               {enquiry.requirement}
             </p>
+            {(enquiry.estimate_file_url || enquiry.site_visit_date) && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {enquiry.estimate_file_url && (
+                  <a
+                    href={enquiry.estimate_file_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-100"
+                  >
+                    <Paperclip className="h-3 w-3" />
+                    Estimate
+                    {enquiry.estimate_uploaded_at && (
+                      <span className="font-normal text-emerald-600/80">
+                        · {new Date(enquiry.estimate_uploaded_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
+                      </span>
+                    )}
+                  </a>
+                )}
+                {enquiry.site_visit_date && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-semibold text-orange-700">
+                    <CalendarDays className="h-3 w-3" />
+                    Visit · {formatVisitDate(enquiry.site_visit_date)}
+                  </span>
+                )}
+              </div>
+            )}
             <p className="mt-1 text-xs text-slate-400">
               Added on {formatDate(enquiry.created_at)}
             </p>
@@ -607,18 +633,63 @@ function EnquiryModal({
 }) {
   const isNew = target === "new";
   const initial = isNew
-    ? { customer_name: "", phone: "", location: "", requirement: "", stage: "New Enquiry" as Stage }
+    ? {
+        customer_name: "",
+        phone: "",
+        location: "",
+        requirement: "",
+        stage: "New Enquiry" as Stage,
+        site_visit_date: "",
+        site_visit_notes: "",
+        estimate_file_url: "" as string | null | "",
+        estimate_uploaded_at: "" as string | null | "",
+      }
     : {
         customer_name: target.customer_name,
         phone: target.phone,
         location: target.location,
         requirement: target.requirement,
         stage: target.stage,
+        site_visit_date: target.site_visit_date ?? "",
+        site_visit_notes: target.site_visit_notes ?? "",
+        estimate_file_url: target.estimate_file_url ?? "",
+        estimate_uploaded_at: target.estimate_uploaded_at ?? "",
       };
 
   const [form, setForm] = useState(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function handleFileUpload(file: File) {
+    setError(null);
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "bin";
+      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const path = `enquiries/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}`;
+      const { error: upErr } = await supabase.storage
+        .from("enquiry-attachments")
+        .upload(path, file, {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: file.type || `application/${ext}`,
+        });
+      if (upErr) throw upErr;
+      const { data } = supabase.storage
+        .from("enquiry-attachments")
+        .getPublicUrl(path);
+      setForm((f) => ({
+        ...f,
+        estimate_file_url: data.publicUrl,
+        estimate_uploaded_at: new Date().toISOString(),
+      }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -633,12 +704,18 @@ function EnquiryModal({
       return;
     }
     setSaving(true);
-    const payload = {
+    const payload: Record<string, unknown> = {
       customer_name: form.customer_name.trim().slice(0, 120),
       phone: form.phone.trim().slice(0, 20),
       location: form.location.trim().slice(0, 120),
       requirement: form.requirement.trim().slice(0, 500),
       stage: form.stage,
+      site_visit_date: form.site_visit_date ? form.site_visit_date : null,
+      site_visit_notes: form.site_visit_notes?.trim()
+        ? form.site_visit_notes.trim().slice(0, 500)
+        : null,
+      estimate_file_url: form.estimate_file_url || null,
+      estimate_uploaded_at: form.estimate_uploaded_at || null,
     };
     const { error } = isNew
       ? await supabase.from("enquiries").insert(payload)
