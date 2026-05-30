@@ -20,6 +20,9 @@ import {
   CalendarDays,
   BellRing,
   Upload,
+  LayoutDashboard,
+  Wallet,
+  ExternalLink,
 } from "lucide-react";
 import { supabase, STAGES, type Enquiry, type Stage } from "@/lib/supabase";
 
@@ -137,6 +140,7 @@ function EnquiriesPage() {
   const [editing, setEditing] = useState<EditTarget>(null);
   const [confirmDelete, setConfirmDelete] = useState<Enquiry | null>(null);
   const [reminderOpen, setReminderOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -257,6 +261,7 @@ function EnquiriesPage() {
           <button
             aria-label="Menu"
             className="rounded-lg p-1.5 text-slate-700 hover:bg-slate-100"
+            onClick={() => setMenuOpen(true)}
           >
             <Menu className="h-6 w-6" />
           </button>
@@ -352,6 +357,19 @@ function EnquiriesPage() {
           )}
         </div>
       </div>
+      <SideMenu
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        activeFilter={filter}
+        onSelect={(f) => {
+          setFilter(f);
+          setMenuOpen(false);
+        }}
+        onOpenVisits={() => {
+          setMenuOpen(false);
+          setReminderOpen(true);
+        }}
+      />
 
       {/* Floating add button */}
       <button
